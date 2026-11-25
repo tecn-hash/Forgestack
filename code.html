@@ -1,0 +1,1964 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ForgeStack — Project Code & Ecosystem Generator</title>
+
+  <!-- Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+
+  <!-- Suppress Tailwind Play CDN production advisory for single-file standalone runtime -->
+  <script>
+    (function () {
+      const originalWarn = console.warn;
+      console.warn = function (...args) {
+        if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+          return;
+        }
+        originalWarn.apply(console, args);
+      };
+    })();
+  </script>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            surface: {
+              950: '#09090b',
+              900: '#0f1117',
+              850: '#141720',
+              800: '#1a1e29',
+              700: '#262b3b',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Lucide Icons (Pinned version via jsDelivr to avoid unpkg 404 source map warning) -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+
+  <!-- JSZip for real client-side .zip archive export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- Prism.js for Syntax Highlighting -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-tsx.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-rust.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-docker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+
+  <style>
+    /* Custom Scrollbars & Prism Overrides for Sleek Dark IDE Feel */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+    pre[class*="language-"],
+    code[class*="language-"] {
+      background: transparent !important;
+      text-shadow: none !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 13px !important;
+      line-height: 1.6 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .glass-panel {
+      background: rgba(15, 17, 23, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .bg-grid-pattern {
+      background-image: radial-gradient(rgba(99, 102, 241, 0.12) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeSlideIn 0.2s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-indigo-500/30 selection:text-indigo-200 min-h-screen flex flex-col">
+
+  <!-- Toast Notification Container (Replaces alert) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-30 border-b border-zinc-800/80 glass-panel">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-500 p-[1px] shadow-lg shadow-indigo-500/20">
+          <div class="w-full h-full bg-zinc-950 rounded-[11px] flex items-center justify-center">
+            <i data-lucide="boxes" class="w-5 h-5 text-indigo-400"></i>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-base sm:text-lg tracking-tight text-white">ForgeStack</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              v2.6 Blueprint Engine
+            </span>
+          </div>
+          <p class="text-xs text-zinc-400 hidden md:block">Interactive Project Scaffolding & Ecosystem Architect</p>
+        </div>
+      </div>
+
+      <!-- Global Action Toolbar -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="btn-randomize" type="button"
+          class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-all active:scale-95">
+          <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+          <span>Randomize Idea</span>
+        </button>
+
+        <button id="btn-download-zip" type="button"
+          class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/25 border border-indigo-500/50 transition-all active:scale-95">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Download .ZIP</span>
+          <span id="header-file-count" class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] rounded bg-indigo-800/80 text-indigo-200 font-mono">0 files</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Grid -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-5 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+    <!-- LEFT SIDEBAR: Project Configuration Panel -->
+    <aside class="lg:col-span-4 xl:col-span-3 space-y-4 lg:sticky lg:top-20">
+      <div class="rounded-2xl border border-zinc-800/90 bg-zinc-900/60 p-4 sm:p-5 shadow-xl space-y-5">
+        <div class="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sliders-horizontal" class="w-4 h-4 text-indigo-400"></i>
+            <h2 class="text-sm font-semibold text-zinc-100 uppercase tracking-wider">Project Blueprint</h2>
+          </div>
+          <span id="live-badge" class="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Live Sync
+          </span>
+        </div>
+
+        <!-- Project Name & Description -->
+        <div class="space-y-3">
+          <div>
+            <label for="input-project-name" class="block text-xs font-medium text-zinc-400 mb-1.5">Project Name (slug-ready)</label>
+            <div class="relative">
+              <input id="input-project-name" type="text" value="pulse-metrics" placeholder="e.g. pulse-metrics"
+                class="w-full rounded-xl bg-zinc-950 border border-zinc-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 px-3 py-2 text-sm font-mono text-zinc-100 outline-none transition" />
+              <span id="slug-preview" class="absolute right-2.5 top-2.5 text-[11px] font-mono text-zinc-500">pulse-metrics</span>
+            </div>
+          </div>
+
+          <div>
+            <label for="input-project-desc" class="block text-xs font-medium text-zinc-400 mb-1.5">Description</label>
+            <textarea id="input-project-desc" rows="2" placeholder="Describe your service or app..."
+              class="w-full rounded-xl bg-zinc-950 border border-zinc-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 px-3 py-2 text-xs text-zinc-200 outline-none transition resize-none">Real-time distributed telemetry & observability platform with streaming ingestion and alerting.</textarea>
+          </div>
+        </div>
+
+        <!-- Ecosystem / Tech Stack Presets -->
+        <div class="space-y-2">
+          <label class="block text-xs font-medium text-zinc-400">Ecosystem / Tech Stack Preset</label>
+          <div id="stack-presets-grid" class="grid grid-cols-1 gap-2">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+
+        <!-- Custom Stack Options (Visible only when "custom" preset is chosen) -->
+        <div id="custom-stack-drawer" class="hidden rounded-xl bg-zinc-950/90 border border-indigo-500/30 p-3 space-y-2.5 animate-fade-in">
+          <div class="text-xs font-semibold text-indigo-300 flex items-center gap-1.5">
+            <i data-lucide="wrench" class="w-3.5 h-3.5"></i> Custom Architecture Mix
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="text-[11px] text-zinc-400 block mb-1">Frontend</label>
+              <select id="custom-frontend" class="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-2 py-1.5 text-zinc-200 outline-none">
+                <option value="react">React + Vite</option>
+                <option value="nextjs">Next.js App Router</option>
+                <option value="vanilla">HTML + Tailwind</option>
+                <option value="none">None (API/CLI)</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] text-zinc-400 block mb-1">Backend / Core</label>
+              <select id="custom-backend" class="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-2 py-1.5 text-zinc-200 outline-none">
+                <option value="node">Node + Express</option>
+                <option value="fastapi">Python FastAPI</option>
+                <option value="go">Go (Cobra/Net)</option>
+                <option value="rust">Rust (Clap/Tokio)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature Toggles -->
+        <div class="space-y-2.5 pt-1 border-t border-zinc-800/80">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-medium text-zinc-400">Ecosystem Modules & Tooling</label>
+            <button id="btn-toggle-all" type="button" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">Toggle All</button>
+          </div>
+
+          <div id="feature-toggles-list" class="space-y-1.5">
+            <!-- Populated dynamically via JS -->
+          </div>
+
+          <!-- License Selector -->
+          <div class="pt-1 flex items-center justify-between gap-2">
+            <label for="select-license" class="text-xs text-zinc-400 flex items-center gap-1.5">
+              <i data-lucide="scale" class="w-3.5 h-3.5 text-zinc-500"></i>
+              <span>Open Source License</span>
+            </label>
+            <select id="select-license" class="rounded-lg bg-zinc-950 border border-zinc-800 px-2.5 py-1 text-xs font-mono text-zinc-200 outline-none focus:border-indigo-500">
+              <option value="MIT">MIT License</option>
+              <option value="Apache-2.0">Apache 2.0</option>
+              <option value="None">Proprietary / None</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Generate / Update Action -->
+        <button id="btn-generate" type="button"
+          class="w-full py-2.5 px-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all active:scale-[0.99]">
+          <i data-lucide="zap" class="w-4 h-4"></i>
+          <span>Generate / Update Project</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN WORKSPACE: Tabs & Interactive Output -->
+    <section class="lg:col-span-8 xl:col-span-9 flex flex-col gap-4 min-w-0">
+
+      <!-- Workspace Header Bar: Tabs + Project Quick Stats -->
+      <div class="rounded-2xl border border-zinc-800/90 bg-zinc-900/60 p-2 sm:p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <!-- Navigation Tabs -->
+        <div class="flex items-center gap-1 bg-zinc-950/90 p-1 rounded-xl border border-zinc-800/80 overflow-x-auto">
+          <button data-tab="explorer" class="workspace-tab active flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap bg-zinc-800 text-white shadow-sm">
+            <i data-lucide="folder-tree" class="w-4 h-4 text-indigo-400"></i>
+            <span>File Tree & Code</span>
+          </button>
+          <button data-tab="visualizer" class="workspace-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap text-zinc-400 hover:text-zinc-200">
+            <i data-lucide="network" class="w-4 h-4 text-cyan-400"></i>
+            <span>Ecosystem & Architecture</span>
+          </button>
+          <button data-tab="cli" class="workspace-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap text-zinc-400 hover:text-zinc-200">
+            <i data-lucide="terminal" class="w-4 h-4 text-emerald-400"></i>
+            <span>Quick Setup CLI</span>
+          </button>
+        </div>
+
+        <!-- Summary Metrics -->
+        <div class="flex items-center gap-3 px-2 text-xs text-zinc-400 font-mono">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="files" class="w-3.5 h-3.5 text-zinc-500"></i>
+            <span id="stat-files">0 files</span>
+          </div>
+          <span class="text-zinc-700">|</span>
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="code-2" class="w-3.5 h-3.5 text-zinc-500"></i>
+            <span id="stat-lines">0 lines</span>
+          </div>
+          <span class="text-zinc-700">|</span>
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-zinc-500"></i>
+            <span id="stat-size">0 KB</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 1: FILE TREE & LIVE CODE VIEWER -->
+      <div id="panel-explorer" class="workspace-panel grid grid-cols-1 md:grid-cols-12 rounded-2xl border border-zinc-800/90 bg-zinc-900/50 overflow-hidden shadow-2xl min-h-[640px]">
+
+        <!-- Left Pane: Collapsible Directory Tree -->
+        <div class="md:col-span-4 lg:col-span-3 border-b md:border-b-0 md:border-r border-zinc-800/90 bg-zinc-950/70 flex flex-col">
+          <div class="px-3.5 py-3 border-b border-zinc-800/80 flex items-center justify-between">
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+              <i data-lucide="folder-git-2" class="w-3.5 h-3.5 text-indigo-400"></i>
+              Explorer
+            </span>
+            <div class="flex items-center gap-1">
+              <button id="btn-expand-all" title="Expand All Folders" class="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition">
+                <i data-lucide="chevrons-down-up" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Search Filter inside Tree -->
+          <div class="p-2 border-b border-zinc-800/60">
+            <div class="relative">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-2"></i>
+              <input id="tree-search" type="text" placeholder="Filter files..."
+                class="w-full bg-zinc-900/90 border border-zinc-800 rounded-lg pl-8 pr-2.5 py-1 text-xs text-zinc-200 placeholder-zinc-500 outline-none focus:border-indigo-500/60" />
+            </div>
+          </div>
+
+          <!-- Interactive Folder & File Tree Container -->
+          <div id="file-tree-container" class="flex-1 overflow-y-auto p-2 space-y-0.5 font-mono text-xs select-none max-h-[300px] md:max-h-[560px]">
+            <!-- Tree items rendered here -->
+          </div>
+        </div>
+
+        <!-- Right Pane: Syntax-Highlighted Code Preview -->
+        <div class="md:col-span-8 lg:col-span-9 flex flex-col bg-[#0b0d13] min-w-0">
+          <!-- File Tab & Metadata Header -->
+          <div class="px-4 py-2.5 border-b border-zinc-800/90 bg-zinc-900/80 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span id="active-file-icon" class="text-indigo-400 shrink-0">
+                <i data-lucide="file-code" class="w-4 h-4"></i>
+              </span>
+              <span id="active-file-path" class="font-mono text-xs sm:text-sm text-zinc-100 truncate">README.md</span>
+              <span id="active-file-lang" class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-zinc-800 text-zinc-400 border border-zinc-700/60">markdown</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <div class="hidden sm:flex items-center gap-2 text-[11px] font-mono text-zinc-500">
+                <span id="active-file-lines">0 lines</span>
+                <span>•</span>
+                <span id="active-file-size">0 B</span>
+              </div>
+              <button id="btn-copy-file" type="button"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/80 transition active:scale-95">
+                <i data-lucide="copy" class="w-3.5 h-3.5 text-indigo-400"></i>
+                <span>Copy File</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Code Body with Line Numbers -->
+          <div class="relative flex-1 overflow-auto max-h-[580px] flex font-mono text-[13px]">
+            <div id="code-line-numbers" aria-hidden="true"
+              class="select-none py-4 px-3 text-right text-zinc-600 bg-zinc-950/40 border-r border-zinc-800/50 leading-[1.6] shrink-0">
+              1
+            </div>
+            <pre class="flex-1 p-4 overflow-x-auto m-0"><code id="code-viewer-content" class="language-markdown"></code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: ECOSYSTEM & ARCHITECTURE VISUALIZER -->
+      <div id="panel-visualizer" class="workspace-panel hidden rounded-2xl border border-zinc-800/90 bg-zinc-900/50 bg-grid-pattern p-5 sm:p-6 shadow-2xl space-y-6 animate-fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <i data-lucide="cpu" class="w-5 h-5 text-cyan-400"></i>
+              <span>System Topology & Dependency Graph</span>
+            </h3>
+            <p class="text-xs sm:text-sm text-zinc-400 mt-0.5">Live architectural breakdown, data flow pipeline, and runtime versions for <span id="viz-project-title" class="text-indigo-400 font-mono">pulse-metrics</span>.</p>
+          </div>
+          <span id="viz-stack-badge" class="self-start sm:self-auto px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+            Full-Stack React + Node
+          </span>
+        </div>
+
+        <!-- Visual Data Flow Pipeline Banner -->
+        <div id="architecture-flow-diagram" class="rounded-xl border border-zinc-800 bg-zinc-950/90 p-4 overflow-x-auto">
+          <!-- Rendered dynamically via JS -->
+        </div>
+
+        <!-- Architectural Layer Cards Grid -->
+        <div id="architecture-cards-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <!-- Rendered dynamically via JS -->
+        </div>
+
+        <!-- CLI Quick Commands & Architectural Notes -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
+          <div class="rounded-xl border border-zinc-800 bg-zinc-950/90 p-4 space-y-3">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+              <i data-lucide="terminal-square" class="w-4 h-4 text-emerald-400"></i>
+              Lifecycle & Runtime Commands
+            </h4>
+            <div id="viz-cli-commands" class="space-y-2 font-mono text-xs">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-zinc-800 bg-zinc-950/90 p-4 space-y-3">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+              <i data-lucide="shield-check" class="w-4 h-4 text-indigo-400"></i>
+              Architectural Design Decisions
+            </h4>
+            <ul id="viz-arch-notes" class="space-y-2 text-xs text-zinc-300 leading-relaxed">
+              <!-- Populated dynamically -->
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: QUICK SETUP CLI SCRIPT -->
+      <div id="panel-cli" class="workspace-panel hidden rounded-2xl border border-zinc-800/90 bg-zinc-900/50 overflow-hidden shadow-2xl animate-fade-in">
+        <div class="p-4 sm:p-5 border-b border-zinc-800/90 bg-zinc-900/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="terminal" class="w-5 h-5 text-emerald-400"></i>
+              <span>Zero-Dependency Bootstrap Script</span>
+            </h3>
+            <p class="text-xs text-zinc-400 mt-0.5">Paste this single command block into your terminal to scaffold every directory, file, and dependency locally.</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <!-- Shell Format Switcher -->
+            <div class="inline-flex rounded-lg bg-zinc-950 p-1 border border-zinc-800">
+              <button data-shell="bash" class="shell-toggle active px-2.5 py-1 rounded-md text-xs font-mono font-medium bg-zinc-800 text-emerald-400">Bash / Zsh</button>
+              <button data-shell="powershell" class="shell-toggle px-2.5 py-1 rounded-md text-xs font-mono font-medium text-zinc-400 hover:text-zinc-200">PowerShell</button>
+            </div>
+
+            <button id="btn-copy-cli" type="button"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition active:scale-95">
+              <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+              <span>Copy Script</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-[#0b0d13] p-4 sm:p-5 overflow-x-auto max-h-[580px]">
+          <pre><code id="cli-script-code" class="language-bash"></code></pre>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    /**
+     * ============================================================================
+     * FORGESTACK — INTERACTIVE PROJECT CODE & ECOSYSTEM GENERATOR ENGINE
+     * ============================================================================
+     */
+
+    const STACK_PRESETS = [
+      {
+        id: 'react-node',
+        name: 'Full-Stack React + Node',
+        badge: 'TS + Express + Vite',
+        icon: 'layers',
+        color: 'text-indigo-400',
+        desc: 'React 19, Vite, Tailwind, Express REST API & Shared Types'
+      },
+      {
+        id: 'fastapi-pg',
+        name: 'Python FastAPI + PostgreSQL',
+        badge: 'Python 3.12 + SQLAlchemy',
+        icon: 'database',
+        color: 'text-emerald-400',
+        desc: 'Async FastAPI, Pydantic v2, SQLAlchemy ORM & Alembic migrations'
+      },
+      {
+        id: 'nextjs-prisma',
+        name: 'Next.js + Prisma + Tailwind',
+        badge: 'Full-Stack App Router',
+        icon: 'triangle',
+        color: 'text-sky-400',
+        desc: 'Next.js 15 App Router, Server Actions, Prisma ORM & PostgreSQL'
+      },
+      {
+        id: 'static-web',
+        name: 'Static HTML / Tailwind / JS',
+        badge: 'Zero-Build Web App',
+        icon: 'globe',
+        color: 'text-amber-400',
+        desc: 'Modern responsive web app with ES Modules, Tailwind & SW'
+      },
+      {
+        id: 'cli-rust-go',
+        name: 'High-Speed CLI Tool (Rust / Go)',
+        badge: 'Systems Binary',
+        icon: 'terminal',
+        color: 'text-orange-400',
+        desc: 'Production CLI with subcommands, colored output & config loader'
+      },
+      {
+        id: 'custom',
+        name: 'Custom Stack Architect',
+        badge: 'Mix & Match',
+        icon: 'sliders',
+        color: 'text-purple-400',
+        desc: 'Combine your preferred frontend and backend runtimes'
+      }
+    ];
+
+    const FEATURE_MODULES = [
+      { id: 'docker', label: 'Docker & docker-compose', icon: 'container', default: true },
+      { id: 'githubActions', label: 'GitHub Actions CI/CD', icon: 'git-branch', default: true },
+      { id: 'linting', label: 'ESLint/Prettier or Ruff/Black', icon: 'sparkles', default: true },
+      { id: 'testing', label: 'Unit Testing (Vitest / Pytest)', icon: 'flask-conical', default: true },
+      { id: 'envConfig', label: 'Environment Config (.env.example)', icon: 'key-round', default: true },
+      { id: 'readme', label: 'README.md + Architecture Diagram', icon: 'book-open', default: true }
+    ];
+
+    const PROJECT_IDEAS = [
+      {
+        name: 'pulse-metrics',
+        desc: 'Real-time distributed telemetry & observability platform with streaming ingestion and alerting.',
+        stack: 'react-node',
+        cliLang: 'rust'
+      },
+      {
+        name: 'documind-ai',
+        desc: 'Semantic document indexing and RAG retrieval API powered by vector embeddings and hybrid search.',
+        stack: 'fastapi-pg',
+        cliLang: 'rust'
+      },
+      {
+        name: 'cartflow-commerce',
+        desc: 'Headless multi-tenant checkout engine with webhook orchestration, inventory locks, and Stripe sync.',
+        stack: 'nextjs-prisma',
+        cliLang: 'go'
+      },
+      {
+        name: 'kubesentry-cli',
+        desc: 'Zero-latency terminal diagnostic tool for inspecting cluster health, pod logs, and drift policies.',
+        stack: 'cli-rust-go',
+        cliLang: 'rust'
+      },
+      {
+        name: 'chromapulse-studio',
+        desc: 'Interactive browser-based shader & generative design sandbox with instant SVG/CSS token export.',
+        stack: 'static-web',
+        cliLang: 'go'
+      }
+    ];
+
+    const state = {
+      projectName: 'pulse-metrics',
+      description: 'Real-time distributed telemetry & observability platform with streaming ingestion and alerting.',
+      stack: 'react-node',
+      cliLang: 'rust',
+      customFrontend: 'react',
+      customBackend: 'node',
+      features: {
+        docker: true,
+        githubActions: true,
+        linting: true,
+        testing: true,
+        envConfig: true,
+        readme: true
+      },
+      license: 'MIT',
+      activeTab: 'explorer',
+      shellType: 'bash',
+      selectedFilePath: null,
+      collapsedFolders: new Set(),
+      treeSearchQuery: '',
+      generatedFiles: {}
+    };
+
+    function slugify(str) {
+      return (str || 'my-awesome-project')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9-_]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'forge-app';
+    }
+
+    function toPascalCase(slug) {
+      return slug
+        .split(/[-_]+/)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join('');
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function detectLanguage(filepath) {
+      const ext = filepath.split('.').pop().toLowerCase();
+      const map = {
+        js: 'javascript',
+        mjs: 'javascript',
+        cjs: 'javascript',
+        ts: 'typescript',
+        tsx: 'tsx',
+        jsx: 'jsx',
+        py: 'python',
+        rs: 'rust',
+        go: 'go',
+        json: 'json',
+        yml: 'yaml',
+        yaml: 'yaml',
+        sh: 'bash',
+        md: 'markdown',
+        html: 'markup',
+        css: 'css',
+        sql: 'sql',
+        toml: 'toml',
+        prisma: 'graphql',
+        dockerfile: 'docker'
+      };
+      if (filepath.toLowerCase().includes('dockerfile')) return 'docker';
+      if (filepath.endsWith('.env.example') || filepath.endsWith('.gitignore')) return 'bash';
+      return map[ext] || 'clike';
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return `${bytes} B`;
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = type === 'success'
+        ? 'bg-zinc-900/95 border-emerald-500/40 text-emerald-300'
+        : 'bg-zinc-900/95 border-indigo-500/40 text-indigo-300';
+      const icon = type === 'success' ? 'check-circle-2' : 'info';
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-2xl text-xs font-medium backdrop-blur-md animate-fade-in ${colors}`;
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 shrink-0"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      lucide.createIcons({ nodes: [toast] });
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(6px)';
+        toast.style.transition = 'all 0.2s ease';
+        setTimeout(() => toast.remove(), 220);
+      }, 2800);
+    }
+
+    function copyTextToClipboard(text, successMsg) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg || 'Copied to clipboard!');
+      } catch (err) {
+        showToast('Failed to copy text', 'info');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    function generateProjectFiles() {
+      const slug = slugify(state.projectName);
+      const pascal = toPascalCase(slug);
+      const desc = state.description.trim() || 'Modern cloud-native software project generated by ForgeStack.';
+      const files = {};
+
+      let effectiveStack = state.stack;
+      if (state.stack === 'custom') {
+        if (state.customBackend === 'fastapi') effectiveStack = 'fastapi-pg';
+        else if (state.customBackend === 'rust' || state.customBackend === 'go') effectiveStack = 'cli-rust-go';
+        else if (state.customFrontend === 'nextjs') effectiveStack = 'nextjs-prisma';
+        else effectiveStack = 'react-node';
+      }
+
+      files['.gitignore'] = `# Dependencies & Build Artifacts
+node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+dist/
+build/
+.next/
+target/
+coverage/
+
+# Environment & Secrets
+.env
+.env.local
+*.pem
+
+# IDE & OS
+.DS_Store
+.vscode/
+.idea/
+`;
+
+      if (effectiveStack === 'react-node') {
+        files['package.json'] = JSON.stringify({
+          name: slug,
+          version: '0.1.0',
+          private: true,
+          description: desc,
+          workspaces: ['client', 'server'],
+          scripts: {
+            dev: 'concurrently "npm run dev --workspace=server" "npm run dev --workspace=client"',
+            build: 'npm run build --workspace=client && npm run build --workspace=server',
+            ...(state.features.testing ? { test: 'vitest run' } : {}),
+            ...(state.features.linting ? { lint: 'eslint . --ext .ts,.tsx', format: 'prettier --write .' } : {})
+          },
+          devDependencies: {
+            concurrently: '^9.1.0',
+            typescript: '^5.7.2',
+            ...(state.features.testing ? { vitest: '^2.1.8' } : {}),
+            ...(state.features.linting ? { eslint: '^9.16.0', prettier: '^3.4.2' } : {})
+          }
+        }, null, 2);
+
+        files['server/package.json'] = JSON.stringify({
+          name: `@${slug}/server`,
+          version: '0.1.0',
+          type: 'module',
+          scripts: {
+            dev: 'tsx watch src/index.ts',
+            build: 'tsc',
+            start: 'node dist/index.js'
+          },
+          dependencies: {
+            express: '^4.21.1',
+            cors: '^2.8.5',
+            helmet: '^8.0.0',
+            dotenv: '^16.4.7',
+            zod: '^3.23.8'
+          },
+          devDependencies: {
+            '@types/express': '^5.0.0',
+            '@types/cors': '^2.8.17',
+            tsx: '^4.19.2',
+            typescript: '^5.7.2'
+          }
+        }, null, 2);
+
+        files['server/src/index.ts'] = `import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+import { healthRouter } from './routes/health.js';
+
+dotenv.config();
+
+const app = express();
+const PORT = Number(process.env.PORT) || 4000;
+
+app.use(helmet());
+app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
+app.use(express.json());
+
+// Core API Routes
+app.use('/api/health', healthRouter);
+
+app.get('/api/v1/status', (_req, res) => {
+  res.json({
+    service: '${slug}',
+    status: 'operational',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(\`[${pascal} API] Listening on http://localhost:\${PORT}\`);
+});
+
+export default app;
+`;
+
+        files['server/src/routes/health.ts'] = `import { Router } from 'express';
+
+export const healthRouter = Router();
+
+healthRouter.get('/', (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    uptime: process.uptime(),
+    memoryUsageMB: Math.round(process.memoryUsage().rss / 1024 / 1024)
+  });
+});
+`;
+
+        files['client/package.json'] = JSON.stringify({
+          name: `@${slug}/client`,
+          version: '0.1.0',
+          type: 'module',
+          scripts: {
+            dev: 'vite',
+            build: 'vite build',
+            preview: 'vite preview'
+          },
+          dependencies: {
+            react: '^19.0.0',
+            'react-dom': '^19.0.0',
+            'lucide-react': '^0.468.0'
+          },
+          devDependencies: {
+            '@vitejs/plugin-react': '^4.3.4',
+            tailwindcss: '^3.4.16',
+            vite: '^6.0.3'
+          }
+        }, null, 2);
+
+        files['client/index.html'] = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${pascal} — Dashboard</title>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"><` + `/script>
+  </body>
+</html>
+`;
+
+        files['client/src/main.tsx'] = `import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+`;
+
+        files['client/src/App.tsx'] = `import React, { useEffect, useState } from 'react';
+
+interface ServiceStatus {
+  service: string;
+  status: string;
+  timestamp: string;
+}
+
+export default function App() {
+  const [status, setStatus] = useState<ServiceStatus | null>(null);
+
+  useEffect(() => {
+    fetch('http://localhost:4000/api/v1/status')
+      .then((res) => res.json())
+      .then(setStatus)
+      .catch(() => setStatus({ service: '${slug}', status: 'offline', timestamp: new Date().toISOString() }));
+  }, []);
+
+  return (
+    <main className="min-h-screen bg-slate-950 text-slate-100 p-8 flex flex-col items-center justify-center">
+      <div className="max-w-xl w-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
+        <span className="px-2.5 py-1 rounded-full text-xs font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          ${slug}
+        </span>
+        <h1 className="text-2xl font-bold tracking-tight">${pascal}</h1>
+        <p className="text-sm text-slate-400">${desc}</p>
+        <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-emerald-400">
+          API Status: {status ? status.status.toUpperCase() : 'Connecting...'}
+        </div>
+      </div>
+    </main>
+  );
+}
+`;
+
+        files['client/src/index.css'] = `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+`;
+      } else if (effectiveStack === 'fastapi-pg') {
+        files['requirements.txt'] = `fastapi==0.115.6
+uvicorn[standard]==0.32.1
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+pydantic==2.10.3
+pydantic-settings==2.6.1
+alembic==1.14.0
+${state.features.testing ? 'pytest==8.3.4\nhttpx==0.28.1\n' : ''}${state.features.linting ? 'ruff==0.8.2\n' : ''}`;
+
+        files['app/__init__.py'] = `"""${pascal} FastAPI Application Package."""\n`;
+
+        files['app/core/config.py'] = `from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "${pascal}"
+    API_V1_PREFIX: str = "/api/v1"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/${slug.replace(/-/g, '_')}"
+    ENVIRONMENT: str = "development"
+
+    class Config:
+        env_file = ".env"
+
+
+settings = Settings()
+`;
+
+        files['app/db/session.py'] = `from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.orm import DeclarativeBase
+from app.core.config import settings
+
+engine = create_async_engine(settings.DATABASE_URL, echo=False, future=True)
+AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
+`;
+
+        files['app/models/item.py'] = `from sqlalchemy import String, Text, DateTime, func
+from sqlalchemy.orm import Mapped, mapped_column
+from app.db.session import Base
+
+
+class ResourceItem(Base):
+    __tablename__ = "resource_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+`;
+
+        files['app/main.py'] = `from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    description="${desc.replace(/"/g, '\\"')}",
+    version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/health", tags=["System"])
+async def health_check():
+    return {"status": "healthy", "service": "${slug}", "environment": settings.ENVIRONMENT}
+
+
+@app.get(f"{settings.API_V1_PREFIX}/info", tags=["Metadata"])
+async def service_info():
+    return {"name": settings.PROJECT_NAME, "version": "0.1.0"}
+`;
+      } else if (effectiveStack === 'nextjs-prisma') {
+        files['package.json'] = JSON.stringify({
+          name: slug,
+          version: '0.1.0',
+          private: true,
+          scripts: {
+            dev: 'next dev --turbopack',
+            build: 'prisma generate && next build',
+            start: 'next start',
+            'db:push': 'prisma db push',
+            ...(state.features.linting ? { lint: 'next lint' } : {}),
+            ...(state.features.testing ? { test: 'vitest run' } : {})
+          },
+          dependencies: {
+            next: '15.1.0',
+            react: '^19.0.0',
+            'react-dom': '^19.0.0',
+            '@prisma/client': '^6.0.1',
+            'lucide-react': '^0.468.0'
+          },
+          devDependencies: {
+            prisma: '^6.0.1',
+            typescript: '^5.7.2',
+            tailwindcss: '^3.4.16',
+            '@types/node': '^22.10.1',
+            '@types/react': '^19.0.1',
+            ...(state.features.testing ? { vitest: '^2.1.8' } : {})
+          }
+        }, null, 2);
+
+        files['prisma/schema.prisma'] = `generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+`;
+
+        files['src/lib/prisma.ts'] = `import { PrismaClient } from '@prisma/client';
+
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+`;
+
+        files['src/app/layout.tsx'] = `import type { Metadata } from 'next';
+import './globals.css';
+
+export const metadata: Metadata = {
+  title: '${pascal}',
+  description: '${desc.replace(/'/g, "\\'")}',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className="dark">
+      <body className="bg-zinc-950 text-zinc-100 antialiased">{children}</body>
+    </html>
+  );
+}
+`;
+
+        files['src/app/page.tsx'] = `export default function HomePage() {
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center p-6">
+      <div className="max-w-2xl w-full rounded-2xl border border-zinc-800 bg-zinc-900/70 p-8 space-y-4">
+        <span className="text-xs font-mono uppercase tracking-wider text-sky-400">Next.js 15 + Prisma ORM</span>
+        <h1 className="text-3xl font-bold tracking-tight">${pascal}</h1>
+        <p className="text-zinc-400 text-sm leading-relaxed">${desc}</p>
+      </div>
+    </main>
+  );
+}
+`;
+
+        files['src/app/api/health/route.ts'] = `import { NextResponse } from 'next/server';
+
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    service: '${slug}',
+    timestamp: new Date().toISOString()
+  });
+}
+`;
+
+        files['src/app/globals.css'] = `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+`;
+      } else if (effectiveStack === 'static-web') {
+        files['index.html'] = `<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${pascal}</title>
+  <script src="https://cdn.tailwindcss.com"><` + `/script>
+  <link rel="stylesheet" href="./styles/main.css" />
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+  <header class="border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+    <span class="font-bold text-lg tracking-tight text-indigo-400">${pascal}</span>
+    <button id="cta-btn" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium transition">
+      Launch Action
+    </button>
+  </header>
+
+  <main class="flex-1 max-w-4xl mx-auto px-6 py-16 text-center space-y-6">
+    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight">${pascal}</h1>
+    <p class="text-slate-400 max-w-2xl mx-auto text-lg">${desc}</p>
+    <div id="status-output" class="mt-8 p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-emerald-400">
+      Ready • Zero-Build ES Module Architecture
+    </div>
+  </main>
+
+  <script type="module" src="./src/app.js"><` + `/script>
+</body>
+</html>
+`;
+
+        files['styles/main.css'] = `:root {
+  --brand-accent: #6366f1;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+`;
+
+        files['src/app.js'] = `const btn = document.getElementById('cta-btn');
+const output = document.getElementById('status-output');
+
+btn?.addEventListener('click', () => {
+  const now = new Date().toLocaleTimeString();
+  output.textContent = \`[${pascal}] Event triggered at \${now}\`;
+});
+`;
+      } else if (effectiveStack === 'cli-rust-go') {
+        const isGo = state.stack === 'custom' ? state.customBackend === 'go' : state.cliLang === 'go';
+        if (isGo) {
+          files['go.mod'] = `module github.com/forgestack/${slug}
+
+go 1.23
+
+require github.com/spf13/cobra v1.8.1
+`;
+          files['main.go'] = `package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
+)
+
+func main() {
+	rootCmd := &cobra.Command{
+		Use:   "${slug}",
+		Short: "${pascal} CLI",
+		Long:  "${desc.replace(/"/g, '\\"')}",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("🚀 ${pascal} CLI is ready. Run --help for subcommands.")
+		},
+	}
+
+	statusCmd := &cobra.Command{
+		Use:   "status",
+		Short: "Check system diagnostics",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("✔ All subsystems nominal")
+		},
+	}
+
+	rootCmd.AddCommand(statusCmd)
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+`;
+        } else {
+          files['Cargo.toml'] = `[package]
+name = "${slug}"
+version = "0.1.0"
+edition = "2021"
+description = "${desc.replace(/"/g, '\\"')}"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1.0"
+`;
+          files['src/main.rs'] = `use anyhow::Result;
+use clap::{Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(name = "${slug}", version, about = "${desc.replace(/"/g, '\\"')}")]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Run diagnostic health checks
+    Check {
+        #[arg(short, long)]
+        verbose: bool,
+    },
+}
+
+fn main() -> Result<()> {
+    let cli = Cli::parse();
+
+    match cli.command {
+        Some(Commands::Check { verbose }) => {
+            println!("✔ [${slug}] Diagnostics passed (verbose={})", verbose);
+        }
+        None => {
+            println!("🚀 ${pascal} CLI initialized. Use --help to inspect commands.");
+        }
+    }
+
+    Ok(())
+}
+`;
+        }
+      }
+
+      // ------------------------------------------------------------------------
+      // OPTIONAL ECOSYSTEM MODULES
+      // ------------------------------------------------------------------------
+      if (state.features.envConfig) {
+        files['.env.example'] = `# ${pascal} Environment Configuration
+NODE_ENV=development
+PORT=4000
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/${slug.replace(/-/g, '_')}
+API_SECRET_KEY=replace_with_secure_random_token
+`;
+      }
+
+      if (state.features.docker) {
+        if (effectiveStack === 'fastapi-pg') {
+          files['Dockerfile'] = `FROM python:3.12-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+`;
+        } else if (effectiveStack === 'cli-rust-go') {
+          files['Dockerfile'] = `FROM rust:1.83-slim AS builder
+WORKDIR /usr/src/app
+COPY . .
+RUN cargo build --release || true
+
+FROM debian:bookworm-slim
+WORKDIR /app
+COPY --from=builder /usr/src/app/target/release/${slug} /usr/local/bin/${slug}
+ENTRYPOINT ["${slug}"]
+`;
+        } else {
+          files['Dockerfile'] = `FROM node:22-alpine AS base
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 4000
+CMD ["npm", "run", "dev"]
+`;
+        }
+
+        files['docker-compose.yml'] = `services:
+  app:
+    build: .
+    container_name: ${slug}-app
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env.example
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: ${slug}-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${slug.replace(/-/g, '_')}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+`;
+      }
+
+      if (state.features.githubActions) {
+        files['.github/workflows/ci.yml'] = `name: ${pascal} CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install & Verify
+        run: |
+          echo "Running automated checks for ${slug}..."
+          ${state.features.linting ? 'npm run lint --if-present' : 'echo "Lint step skipped"'}
+          ${state.features.testing ? 'npm test --if-present' : 'echo "Test step skipped"'}
+`;
+      }
+
+      if (state.features.linting) {
+        if (effectiveStack === 'fastapi-pg') {
+          files['pyproject.toml'] = `[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+`;
+        } else if (effectiveStack !== 'cli-rust-go') {
+          files['.prettierrc'] = JSON.stringify({
+            semi: true,
+            singleQuote: true,
+            tabWidth: 2,
+            trailingComma: 'es5',
+            printWidth: 100
+          }, null, 2);
+        }
+      }
+
+      if (state.features.testing) {
+        if (effectiveStack === 'fastapi-pg') {
+          files['tests/test_health.py'] = `from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+
+def test_health_endpoint():
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "healthy"
+`;
+        } else if (effectiveStack === 'cli-rust-go') {
+          files['tests/cli_spec.txt'] = `# Integration Test Checklist for ${pascal}
+1. Verify binary exits with status code 0 on --help
+2. Verify status/check subcommand outputs diagnostic summary
+`;
+        } else {
+          files['tests/app.test.ts'] = `import { describe, it, expect } from 'vitest';
+
+describe('${pascal} Core Suite', () => {
+  it('validates project configuration invariants', () => {
+    const serviceName = '${slug}';
+    expect(serviceName.length).toBeGreaterThan(0);
+  });
+});
+`;
+        }
+      }
+
+      if (state.license === 'MIT') {
+        files['LICENSE'] = `MIT License
+
+Copyright (c) ${new Date().getFullYear()} ${pascal} Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`;
+      } else if (state.license === 'Apache-2.0') {
+        files['LICENSE'] = `Apache License
+Version 2.0, January 2004
+http://www.apache.org/licenses/
+
+Copyright ${new Date().getFullYear()} ${pascal} Contributors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+`;
+      }
+
+      if (state.features.readme) {
+        const fileListMd = Object.keys(files)
+          .concat(['README.md'])
+          .sort()
+          .map(f => `- \`${f}\``)
+          .join('\n');
+
+        files['README.md'] = `# ${pascal}
+
+> ${desc}
+
+## Architecture Overview
+
+\`\`\`
+[ Client / Consumer ] ──▶ [ API / Core Engine (${effectiveStack}) ] ──▶ [ Persistence / Storage ]
+\`\`\`
+
+## Quick Start
+
+\`\`\`bash
+# 1. Clone or extract ${slug}
+cd ${slug}
+
+# 2. Configure environment variables
+${state.features.envConfig ? 'cp .env.example .env' : '# No .env file required'}
+
+# 3. Launch services
+${state.features.docker ? 'docker compose up --build' : '# Start local development server'}
+\`\`\`
+
+## Generated Project Structure
+
+${fileListMd}
+
+---
+*Scaffolded with **ForgeStack Blueprint Engine**.*
+`;
+      }
+
+      state.generatedFiles = files;
+
+      const paths = Object.keys(files);
+      if (!state.selectedFilePath || !files[state.selectedFilePath]) {
+        state.selectedFilePath = files['README.md'] ? 'README.md' : paths[0];
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 5. UI RENDERERS
+    // ----------------------------------------------------------------------------
+    function renderSidebarControls() {
+      const presetsContainer = document.getElementById('stack-presets-grid');
+      presetsContainer.innerHTML = STACK_PRESETS.map(preset => {
+        const isActive = state.stack === preset.id;
+        return `
+          <button type="button" data-preset="${preset.id}"
+            class="preset-btn text-left p-2.5 rounded-xl border transition-all flex items-start gap-2.5 ${
+              isActive
+                ? 'bg-indigo-500/10 border-indigo-500/60 shadow-sm'
+                : 'bg-zinc-950/70 border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900/80'
+            }">
+            <div class="mt-0.5 p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 ${preset.color}">
+              <i data-lucide="${preset.icon}" class="w-4 h-4"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-xs font-semibold ${isActive ? 'text-white' : 'text-zinc-200'} truncate">${preset.name}</span>
+              </div>
+              <p class="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">${preset.desc}</p>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      document.getElementById('custom-stack-drawer').classList.toggle('hidden', state.stack !== 'custom');
+
+      const togglesContainer = document.getElementById('feature-toggles-list');
+      togglesContainer.innerHTML = FEATURE_MODULES.map(mod => {
+        const checked = Boolean(state.features[mod.id]);
+        return `
+          <label class="flex items-center justify-between px-2.5 py-2 rounded-xl bg-zinc-950/60 border border-zinc-800/70 hover:border-zinc-700 cursor-pointer transition">
+            <span class="flex items-center gap-2 text-xs text-zinc-300">
+              <i data-lucide="${mod.icon}" class="w-3.5 h-3.5 text-zinc-400"></i>
+              <span>${mod.label}</span>
+            </span>
+            <input type="checkbox" data-feature="${mod.id}" ${checked ? 'checked' : ''}
+              class="feature-checkbox w-4 h-4 rounded accent-indigo-500 cursor-pointer" />
+          </label>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function buildTreeStructure(filePaths) {
+      const root = { name: slugify(state.projectName), path: '', folders: {}, files: [] };
+      filePaths.sort().forEach(fullPath => {
+        const parts = fullPath.split('/');
+        let current = root;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const folderName = parts[i];
+          const folderPath = parts.slice(0, i + 1).join('/');
+          if (!current.folders[folderName]) {
+            current.folders[folderName] = { name: folderName, path: folderPath, folders: {}, files: [] };
+          }
+          current = current.folders[folderName];
+        }
+        current.files.push({ name: parts[parts.length - 1], path: fullPath });
+      });
+      return root;
+    }
+
+    function renderTreeNode(node, depth = 0) {
+      let html = '';
+      const indent = depth * 12;
+
+      Object.values(node.folders)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(folder => {
+          const isCollapsed = state.collapsedFolders.has(folder.path);
+          html += `
+            <div>
+              <button type="button" data-folder="${folder.path}"
+                style="padding-left: ${indent + 8}px"
+                class="tree-folder-btn w-full flex items-center gap-1.5 py-1.5 pr-2 rounded-lg text-zinc-300 hover:bg-zinc-800/70 transition text-left">
+                <i data-lucide="${isCollapsed ? 'chevron-right' : 'chevron-down'}" class="w-3.5 h-3.5 text-zinc-500 shrink-0"></i>
+                <i data-lucide="${isCollapsed ? 'folder' : 'folder-open'}" class="w-3.5 h-3.5 text-amber-400/90 shrink-0"></i>
+                <span class="truncate">${folder.name}</span>
+              </button>
+              <div class="${isCollapsed ? 'hidden' : ''}">
+                ${renderTreeNode(folder, depth + 1)}
+              </div>
+            </div>
+          `;
+        });
+
+      node.files
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(file => {
+          const isSelected = state.selectedFilePath === file.path;
+          html += `
+            <button type="button" data-filepath="${file.path}"
+              style="padding-left: ${indent + 22}px"
+              class="tree-file-btn w-full flex items-center gap-2 py-1.5 pr-2 rounded-lg transition text-left ${
+                isSelected
+                  ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 font-medium'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+              }">
+              <i data-lucide="file-code-2" class="w-3.5 h-3.5 ${isSelected ? 'text-indigo-400' : 'text-zinc-500'} shrink-0"></i>
+              <span class="truncate">${file.name}</span>
+            </button>
+          `;
+        });
+
+      return html;
+    }
+
+    function renderFileTreeAndStats() {
+      const allPaths = Object.keys(state.generatedFiles);
+      const query = state.treeSearchQuery.trim().toLowerCase();
+      const filteredPaths = query
+        ? allPaths.filter(p => p.toLowerCase().includes(query))
+        : allPaths;
+
+      const treeRoot = buildTreeStructure(filteredPaths);
+      const treeContainer = document.getElementById('file-tree-container');
+      treeContainer.innerHTML = filteredPaths.length
+        ? renderTreeNode(treeRoot, 0)
+        : `<div class="p-4 text-center text-zinc-500 text-xs">No files match "${escapeHtml(query)}"</div>`;
+
+      // Update global summary metrics
+      let totalLines = 0;
+      let totalBytes = 0;
+      allPaths.forEach(p => {
+        const content = state.generatedFiles[p] || '';
+        totalLines += content.split('\n').length;
+        totalBytes += new Blob([content]).size;
+      });
+
+      document.getElementById('stat-files').textContent = `${allPaths.length} files`;
+      document.getElementById('header-file-count').textContent = `${allPaths.length} files`;
+      document.getElementById('stat-lines').textContent = `${totalLines.toLocaleString()} lines`;
+      document.getElementById('stat-size').textContent = formatBytes(totalBytes);
+
+      lucide.createIcons({ nodes: [treeContainer] });
+    }
+
+    function renderCodeViewer() {
+      const filepath = state.selectedFilePath;
+      const content = state.generatedFiles[filepath] || '';
+      const lang = detectLanguage(filepath);
+      const lines = content.split('\n');
+
+      document.getElementById('active-file-path').textContent = filepath;
+      document.getElementById('active-file-lang').textContent = lang;
+      document.getElementById('active-file-lines').textContent = `${lines.length} lines`;
+      document.getElementById('active-file-size').textContent = formatBytes(new Blob([content]).size);
+
+      // Line numbers
+      const lineNumsHtml = lines.map((_, idx) => `<div>${idx + 1}</div>`).join('');
+      document.getElementById('code-line-numbers').innerHTML = lineNumsHtml;
+
+      // Highlighted code
+      const codeEl = document.getElementById('code-viewer-content');
+      codeEl.className = `language-${lang}`;
+      codeEl.textContent = content;
+
+      if (window.Prism) {
+        Prism.highlightElement(codeEl);
+      }
+    }
+
+    function renderArchitectureVisualizer() {
+      const slug = slugify(state.projectName);
+      const preset = STACK_PRESETS.find(p => p.id === state.stack) || STACK_PRESETS[0];
+
+      document.getElementById('viz-project-title').textContent = slug;
+      document.getElementById('viz-stack-badge').textContent = preset.name;
+
+      // Pipeline diagram
+      const flowNodes = [
+        { label: 'Client / Edge', sub: 'HTTPS / JSON', icon: 'monitor', color: 'border-indigo-500/40 text-indigo-300' },
+        { label: 'Core Runtime', sub: preset.badge, icon: 'cpu', color: 'border-cyan-500/40 text-cyan-300' },
+        { label: 'Data & State', sub: 'PostgreSQL / Volume', icon: 'database', color: 'border-emerald-500/40 text-emerald-300' },
+        { label: 'CI / Delivery', sub: state.features.docker ? 'Docker + Actions' : 'Native Build', icon: 'rocket', color: 'border-amber-500/40 text-amber-300' }
+      ];
+
+      document.getElementById('architecture-flow-diagram').innerHTML = `
+        <div class="flex items-center justify-between gap-2 min-w-[600px]">
+          ${flowNodes.map((n, i) => `
+            <div class="flex-1 rounded-xl border ${n.color} bg-zinc-900/80 p-3 flex items-center gap-3">
+              <i data-lucide="${n.icon}" class="w-5 h-5 shrink-0"></i>
+              <div>
+                <div class="text-xs font-bold text-white">${n.label}</div>
+                <div class="text-[11px] font-mono text-zinc-400">${n.sub}</div>
+              </div>
+            </div>
+            ${i < flowNodes.length - 1 ? '<i data-lucide="arrow-right" class="w-4 h-4 text-zinc-600 shrink-0"></i>' : ''}
+          `).join('')}
+        </div>
+      `;
+
+      // Architectural Layer Cards
+      const layers = [
+        {
+          title: 'Application Layer',
+          badge: preset.badge,
+          desc: 'Modular entrypoints with strict typing, environment validation, and health telemetry endpoints.'
+        },
+        {
+          title: 'Container & Infra',
+          badge: state.features.docker ? 'Docker Compose Ready' : 'Host Native',
+          desc: state.features.docker
+            ? 'Multi-service orchestration wiring application runtime with isolated PostgreSQL persistence.'
+            : 'Lightweight zero-container execution configured for direct local or PaaS deployment.'
+        },
+        {
+          title: 'Quality & Automation',
+          badge: state.features.githubActions ? 'CI Workflow Active' : 'Manual Checks',
+          desc: 'Automated linting, unit test verification, and reproducible dependency lockfiles.'
+        }
+      ];
+
+      document.getElementById('architecture-cards-grid').innerHTML = layers.map(layer => `
+        <div class="rounded-xl border border-zinc-800 bg-zinc-950/90 p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-white">${layer.title}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-800 text-indigo-300">${layer.badge}</span>
+          </div>
+          <p class="text-xs text-zinc-400 leading-relaxed">${layer.desc}</p>
+        </div>
+      `).join('');
+
+      // CLI Commands
+      const cmds = [
+        `git init && git add . && git commit -m "chore: scaffold ${slug}"`,
+        state.features.docker ? 'docker compose up --build -d' : 'npm install && npm run dev',
+        state.features.testing ? 'npm test' : 'curl -i http://localhost:4000/api/health'
+      ];
+      document.getElementById('viz-cli-commands').innerHTML = cmds.map(c => `
+        <div class="px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-emerald-300 truncate">$ ${escapeHtml(c)}</div>
+      `).join('');
+
+      // Design Notes
+      const notes = [
+        'Twelve-Factor App compliant configuration via typed environment bindings.',
+        'Clean separation between transport handlers, domain logic, and infrastructure adapters.',
+        `Licensed under ${state.license} with automated CI verification gates.`
+      ];
+      document.getElementById('viz-arch-notes').innerHTML = notes.map(note => `
+        <li class="flex items-start gap-2">
+          <span class="text-indigo-400 mt-0.5">•</span>
+          <span>${note}</span>
+        </li>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function generateBootstrapScript() {
+      const slug = slugify(state.projectName);
+      const entries = Object.entries(state.generatedFiles);
+
+      if (state.shellType === 'powershell') {
+        const lines = [
+          `# ForgeStack PowerShell Bootstrap Script for ${slug}`,
+          `New-Item -ItemType Directory -Force -Path "${slug}" | Out-Null`,
+          `Set-Location "${slug}"`,
+          ``
+        ];
+        entries.forEach(([filepath, content]) => {
+          const dir = filepath.includes('/') ? filepath.substring(0, filepath.lastIndexOf('/')) : '';
+          if (dir) {
+            lines.push(`New-Item -ItemType Directory -Force -Path "${dir}" | Out-Null`);
+          }
+          lines.push(`@'\n${content}\n'@ | Set-Content -Path "${filepath}" -Encoding UTF8\n`);
+        });
+        lines.push(`Write-Host "✔ Scaffolded ${entries.length} files in ./${slug}" -ForegroundColor Green`);
+        return lines.join('\n');
+      }
+
+      // Bash / Zsh heredoc script
+      const lines = [
+        `#!/usr/bin/env bash`,
+        `set -euo pipefail`,
+        ``,
+        `mkdir -p "${slug}" && cd "${slug}"`,
+        ``
+      ];
+      entries.forEach(([filepath, content]) => {
+        const dir = filepath.includes('/') ? filepath.substring(0, filepath.lastIndexOf('/')) : '';
+        if (dir) {
+          lines.push(`mkdir -p "${dir}"`);
+        }
+        lines.push(`cat << 'EOF' > "${filepath}"\n${content}\nEOF\n`);
+      });
+      lines.push(`echo "✔ Scaffolded ${entries.length} files inside ./${slug}"`);
+      return lines.join('\n');
+    }
+
+    function renderCliScript() {
+      const codeEl = document.getElementById('cli-script-code');
+      const scriptText = generateBootstrapScript();
+      codeEl.className = state.shellType === 'powershell' ? 'language-powershell' : 'language-bash';
+      codeEl.textContent = scriptText;
+      if (window.Prism) {
+        Prism.highlightElement(codeEl);
+      }
+    }
+
+    function refreshAll() {
+      document.getElementById('slug-preview').textContent = slugify(state.projectName);
+      generateProjectFiles();
+      renderFileTreeAndStats();
+      renderCodeViewer();
+      renderArchitectureVisualizer();
+      renderCliScript();
+    }
+
+    // ----------------------------------------------------------------------------
+    // 6. EVENT LISTENERS & ZIP DOWNLOAD
+    // ----------------------------------------------------------------------------
+    async function downloadProjectZip() {
+      if (!window.JSZip) {
+        showToast('JSZip library is still loading...', 'info');
+        return;
+      }
+      const slug = slugify(state.projectName);
+      const zip = new JSZip();
+      const rootFolder = zip.folder(slug);
+
+      Object.entries(state.generatedFiles).forEach(([filepath, content]) => {
+        rootFolder.file(filepath, content);
+      });
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${slug}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast(`Downloaded ${slug}.zip (${Object.keys(state.generatedFiles).length} files)`);
+    }
+
+    function bindEvents() {
+      // Project Name & Description
+      document.getElementById('input-project-name').addEventListener('input', e => {
+        state.projectName = e.target.value;
+        refreshAll();
+      });
+
+      document.getElementById('input-project-desc').addEventListener('input', e => {
+        state.description = e.target.value;
+        refreshAll();
+      });
+
+      // Preset Selection
+      document.getElementById('stack-presets-grid').addEventListener('click', e => {
+        const btn = e.target.closest('.preset-btn');
+        if (!btn) return;
+        state.stack = btn.dataset.preset;
+        renderSidebarControls();
+        refreshAll();
+      });
+
+      // Custom Frontend / Backend selects
+      document.getElementById('custom-frontend').addEventListener('change', e => {
+        state.customFrontend = e.target.value;
+        refreshAll();
+      });
+      document.getElementById('custom-backend').addEventListener('change', e => {
+        state.customBackend = e.target.value;
+        refreshAll();
+      });
+
+      // Feature Toggles
+      document.getElementById('feature-toggles-list').addEventListener('change', e => {
+        if (!e.target.classList.contains('feature-checkbox')) return;
+        state.features[e.target.dataset.feature] = e.target.checked;
+        refreshAll();
+      });
+
+      document.getElementById('btn-toggle-all').addEventListener('click', () => {
+        const allEnabled = Object.values(state.features).every(Boolean);
+        Object.keys(state.features).forEach(k => {
+          state.features[k] = !allEnabled;
+        });
+        renderSidebarControls();
+        refreshAll();
+      });
+
+      // License Select
+      document.getElementById('select-license').addEventListener('change', e => {
+        state.license = e.target.value;
+        refreshAll();
+      });
+
+      // Generate button
+      document.getElementById('btn-generate').addEventListener('click', () => {
+        refreshAll();
+        showToast('Project blueprint regenerated!');
+      });
+
+      // Randomize Idea
+      document.getElementById('btn-randomize').addEventListener('click', () => {
+        const candidates = PROJECT_IDEAS.filter(i => i.name !== slugify(state.projectName));
+        const pick = candidates[Math.floor(Math.random() * candidates.length)];
+        state.projectName = pick.name;
+        state.description = pick.desc;
+        state.stack = pick.stack;
+        state.cliLang = pick.cliLang;
+
+        document.getElementById('input-project-name').value = pick.name;
+        document.getElementById('input-project-desc').value = pick.desc;
+        renderSidebarControls();
+        refreshAll();
+        showToast(`Loaded "${pick.name}" blueprint!`);
+      });
+
+      // Download ZIP
+      document.getElementById('btn-download-zip').addEventListener('click', downloadProjectZip);
+
+      // Workspace Tabs
+      document.querySelectorAll('.workspace-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const target = tab.dataset.tab;
+          state.activeTab = target;
+
+          document.querySelectorAll('.workspace-tab').forEach(t => {
+            const active = t.dataset.tab === target;
+            t.classList.toggle('bg-zinc-800', active);
+            t.classList.toggle('text-white', active);
+            t.classList.toggle('shadow-sm', active);
+            t.classList.toggle('text-zinc-400', !active);
+          });
+
+          document.querySelectorAll('.workspace-panel').forEach(panel => {
+            panel.classList.toggle('hidden', panel.id !== `panel-${target}`);
+          });
+        });
+      });
+
+      // Tree Search & Expand All
+      document.getElementById('tree-search').addEventListener('input', e => {
+        state.treeSearchQuery = e.target.value;
+        renderFileTreeAndStats();
+      });
+
+      document.getElementById('btn-expand-all').addEventListener('click', () => {
+        state.collapsedFolders.clear();
+        renderFileTreeAndStats();
+      });
+
+      // File Tree Clicks (Folder collapse / File select)
+      document.getElementById('file-tree-container').addEventListener('click', e => {
+        const folderBtn = e.target.closest('.tree-folder-btn');
+        if (folderBtn) {
+          const folderPath = folderBtn.dataset.folder;
+          if (state.collapsedFolders.has(folderPath)) {
+            state.collapsedFolders.delete(folderPath);
+          } else {
+            state.collapsedFolders.add(folderPath);
+          }
+          renderFileTreeAndStats();
+          return;
+        }
+
+        const fileBtn = e.target.closest('.tree-file-btn');
+        if (fileBtn) {
+          state.selectedFilePath = fileBtn.dataset.filepath;
+          renderFileTreeAndStats();
+          renderCodeViewer();
+        }
+      });
+
+      // Copy Active File
+      document.getElementById('btn-copy-file').addEventListener('click', () => {
+        const content = state.generatedFiles[state.selectedFilePath] || '';
+        copyTextToClipboard(content, `Copied ${state.selectedFilePath}`);
+      });
+
+      // Shell Toggle & Copy CLI Script
+      document.querySelectorAll('.shell-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.shellType = btn.dataset.shell;
+          document.querySelectorAll('.shell-toggle').forEach(b => {
+            const active = b.dataset.shell === state.shellType;
+            b.classList.toggle('bg-zinc-800', active);
+            b.classList.toggle('text-emerald-400', active);
+            b.classList.toggle('text-zinc-400', !active);
+          });
+          renderCliScript();
+        });
+      });
+
+      document.getElementById('btn-copy-cli').addEventListener('click', () => {
+        copyTextToClipboard(generateBootstrapScript(), 'Bootstrap CLI script copied!');
+      });
+    }
+
+    // Initialize Application
+    window.addEventListener('DOMContentLoaded', () => {
+      renderSidebarControls();
+      bindEvents();
+      refreshAll();
+    });
+  </script>
+</body>
+</html>
